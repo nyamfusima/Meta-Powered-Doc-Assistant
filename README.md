@@ -1,68 +1,61 @@
-# **Welcome to Your First META-Powered Document Assistant**
+# Welcome to Your First META-Powered Document Assistant
 
-Today, we’re going to build a simple but powerful AI tool:
-a PDF Question-and-Answer system powered by Meta’s Llama AI models.
+Today, we're going to build a simple but powerful AI tool: a **PDF Question-and-Answer system** powered by Meta's Llama AI models.
 
-### **This tool will allow you to:**
+## What This Tool Will Allow You To Do
 
-Upload any PDF
+📄 **Upload any PDF**
+- A company report
+- A curriculum  
+- A policy document
+- A research paper
 
-For example:
+💬 **Ask natural questions**
+- "What are the main goals in this document?"
+- "What does this policy say about attendance?"
+- "Summarise the key points in chapter one."
 
-*   A company report
-*   A curriculum
-*   A policy document
-*   A research paper
+🤖 **Get accurate answers** — based only on the PDF itself
 
+The AI does not guess or make things up. It searches the document, finds the right information, and gives you a clean answer.
 
-**Ask natural questions**
+---
 
-Like:
-
-
-*   “What are the main goals in this document?”
-*   “What does this policy say about attendance?”
-*   “Summarise the key points in chapter one.”
-
-
-🤖 And get **accurate** answers—based only on the **PDF** itself
-
-The AI does not guess or make things up.
-It searches the document, finds the right information, and gives you a clean answer.
-
-# **Before You Begin**
+## Before You Begin
 
 Please ensure you have the following:
 
-1. Access to Google Colab
+1. ✅ Access to Google Colab
+2. ✅ OpenRouter API Key - [Watch this tutorial](https://www.youtube.com/watch?v=-X9DVzzxpAA)
+3. ✅ Google Drive link to the PDF
 
-2. OpenRouter API Key - https://www.youtube.com/watch?v=-X9DVzzxpAA
+🤖 *"May the code be with you"*
 
-3. Google Drive link to the PDF
+---
 
-🤖 - "May the code be with you"
-
-# Step 1 — Installing the Tools We Need
+## Step 1 — Installing the Tools We Need
 
 Before we can start building our AI system, we need to install a few essential tools. Think of this like installing apps on your phone before you can use them.
 
-**What you'll need:**
+### What You'll Need
 
-1.   **LlamaIndex** — helps the AI read and understand documents
-2.   **OpenRouter connector** — allows us to use Meta’s Llama AI model
-3.   **HuggingFace Embeddings** — helps the AI understand text by turning words into numbers
-4.  **Document readers** — so the notebook can open and read PDF files
-5.  **Fusion retriever tools** — advanced search tools that improve answer accuracy
+1. **LlamaIndex** — helps the AI read and understand documents
+2. **OpenRouter connector** — allows us to use Meta's Llama AI model
+3. **HuggingFace Embeddings** — helps the AI understand text by turning words into numbers
+4. **Document readers** — so the notebook can open and read PDF files
+5. **Fusion retriever tools** — advanced search tools that improve answer accuracy
 
-This cell does not build the system yet — it only prepares the environment.
-Once everything is installed, the rest of the notebook will work smoothly.
+This cell does not build the system yet — it only prepares the environment. Once everything is installed, the rest of the notebook will work smoothly.
 
-After you run this cell once, you don’t need to install again unless the runtime resets.
+> **Note:** After you run this cell once, you don't need to install again unless the runtime resets.
 
+### 📋 Copy and paste this code into Cell 1:
+
+```python
 # Step 1 – Install all the tools our AI document assistant needs
 #
 # In this cell, we install the main libraries that make our RAG (Retrieval-Augmented Generation)
-# system work. Think of this as installing the “apps” our notebook will use.
+# system work. Think of this as installing the "apps" our notebook will use.
 #
 # Here is what each tool does:
 #
@@ -71,7 +64,7 @@ After you run this cell once, you don’t need to install again unless the runti
 #     and search through them. It handles most of the heavy lifting for our RAG system.
 #
 # llama-index-llms-openrouter
-#   - Allows us to connect to Meta’s Llama models through OpenRouter, so our AI can
+#   - Allows us to connect to Meta's Llama models through OpenRouter, so our AI can
 #     understand questions and generate answers.
 #
 # llama-index-embeddings-huggingface
@@ -82,7 +75,7 @@ After you run this cell once, you don’t need to install again unless the runti
 #   - Gives the notebook the ability to read PDF files and other documents from your system.
 #
 # llama-index-packs-fusion-retriever
-#   - Provides the “query fusion” tool we use to improve answer accuracy. It takes your question,
+#   - Provides the "query fusion" tool we use to improve answer accuracy. It takes your question,
 #     rewrites it in different ways, searches the document multiple times, and combines the results.
 #
 # sentence-transformers
@@ -97,7 +90,6 @@ After you run this cell once, you don’t need to install again unless the runti
 #
 # After running this cell, all the required tools will be installed and ready.
 # You only need to run this once per session.
-#
 
 %pip install -q \
   llama-index \
@@ -110,23 +102,27 @@ After you run this cell once, you don’t need to install again unless the runti
   requests
 
 print("✅ Installation complete")
-# Step 2 — Setting Up the AI Model
+```
+
+---
+
+## Step 2 — Setting Up the AI Model
 
 Now that all our tools have been installed, this next cell is where we connect our notebook to the actual AI model that will answer our questions.
 
-In this step, we:
+### In This Step, We:
 
-✔ 1. Enter our OpenRouter API key
+✔ **Enter our OpenRouter API key**
 
-✔ 2. Choose which Llama model we want to use
+✔ **Choose which Llama model we want to use**
 
-✔ 3. Set rules for how the AI should behave
+✔ **Set rules for how the AI should behave**
 
-✔ 4. Set up the embedding model
+✔ **Set up the embedding model** — This is a tool that helps the AI "understand" text by turning it into numerical patterns. It improves how well the system can find information inside the PDF.
 
-This is a tool that helps the AI “understand” text by turning it into numerical patterns.
-It improves how well the system can find information inside the PDF.
+### 📋 Copy and paste this code into Cell 2:
 
+```python
 # Step 2 – Connect to the AI model and set up how our system will think
 #
 # In this cell, we prepare the AI model that will answer our questions.
@@ -177,39 +173,34 @@ Settings.llm = llm
 Settings.embed_model = embed_model
 
 print("✅ AI model and settings are ready to use")
+```
 
-# Step 3 — Loading the PDF From Google Drive
+---
 
-In this step, we give our AI system the actual PDF document it needs to learn from.
-Instead of uploading a file manually, we simply paste a Google Drive link, and the notebook automatically downloads the PDF for us.
+## Step 3 — Loading the PDF From Google Drive
 
-**This cell:**
+In this step, we give our AI system the actual PDF document it needs to learn from. Instead of uploading a file manually, we simply paste a Google Drive link, and the notebook automatically downloads the PDF for us.
 
-✔ 1. Asks you to paste the Google Drive link
+### This Cell:
 
-This is where your PDF is stored.
+✔ **Asks you to paste the Google Drive link** — This is where your PDF is stored.
 
-✔ 2. Extracts the file ID from the link
+✔ **Extracts the file ID from the link** — The notebook figures out which file to download.
 
-The notebook figures out which file to download.
+✔ **Downloads the PDF into the notebook** — Now the AI can read it.
 
-✔ 3. Downloads the PDF into the notebook
+✔ **Saves it in a folder so we can use it later** — This is the document the entire system will work with.
 
-Now the AI can read it.
+**In simple terms:** Step 3 brings the PDF into our AI workspace so the system can read it, understand it, and answer questions about it.
 
-✔ 4. Saves it in a folder so we can use it later
+### 📋 Copy and paste this code into Cell 3:
 
-This is the document the entire system will work with.
-
-**In simple terms:**
-
-**Step 3** brings the **PDF** into our **AI workspace** so the system can read it, understand it, and answer questions about it.
-
+```python
 # Step 3 – Download the PDF from a Google Drive link
 #
 # This cell takes the Google Drive link you paste in, downloads the PDF,
 # and saves it so our AI system can read it later.
-# You don’t need to upload anything manually — the notebook does it for you.
+# You don't need to upload anything manually — the notebook does it for you.
 
 import requests
 import re
@@ -257,41 +248,36 @@ pdf_path = os.path.join(DATA_DIR, "source.pdf")
 
 # Download the PDF using the link provided.
 download_pdf_from_drive(drive_link, pdf_path)
+```
 
-# Step 4 — Preparing the PDF for the AI to Understand
+---
 
-Now that we’ve downloaded the PDF, the next step is to help the AI make sense of it.
+## Step 4 — Preparing the PDF for the AI to Understand
+
+Now that we've downloaded the PDF, the next step is to help the AI make sense of it.
 
 AI models cannot read a full PDF the way humans do, so we need to break the document into small, meaningful sections. This step is extremely important because it determines how accurately the AI will find answers later.
 
-**In this cell, we:**
+### In This Cell, We:
 
-✔ 1. Load the PDF into the notebook
+✔ **Load the PDF into the notebook** — The system opens the file so it can start reading the content.
 
-The system opens the file so it can start reading the content.
+✔ **Break the PDF into "semantic chunks"** — Instead of cutting the document randomly, we break it into smart, meaningful pieces — almost like dividing a book into paragraphs and sections. This helps the AI understand the document in a more natural way.
 
-✔ 2. Break the PDF into “semantic chunks”
+✔ **Add simple labels to each chunk** — This makes it easier for the AI to keep track of where each piece came from.
 
-Instead of cutting the document randomly, we break it into smart, meaningful pieces — almost like dividing a book into paragraphs and sections.
-This helps the AI understand the document in a more natural way.
+✔ **Prepare these pieces for searching** — These chunks will later be used by the AI to look up the right answer when you ask a question.
 
-✔ 3. Add simple labels to each chunk
+**In simple terms:** Step 4 teaches the AI how to read the PDF in a way it can understand and search through accurately.
 
-This makes it easier for the AI to keep track of where each piece came from.
+### 📋 Copy and paste this code into Cell 4:
 
-✔ 4. Prepare these pieces for searching
-
-These chunks will later be used by the AI to look up the right answer when you ask a question.
-
-**In simple terms:**
-
-**Step 4** teaches the AI how to read the PDF in a way it can **understand** and **search** through **accurately**.
-
+```python
 # Cell 4 – Break the PDF into meaningful pieces the AI can understand
 #
 # In this step, we take the PDF we downloaded and prepare it so the AI can
 # read it properly. The AI cannot understand one big block of text, so we
-# break the document into smaller, meaningful sections (called “chunks”).
+# break the document into smaller, meaningful sections (called "chunks").
 #
 # These chunks act like paragraphs or mini-sections that the AI can search
 # through when answering your questions.
@@ -328,12 +314,15 @@ for n in nodes:
     n.metadata["chunk_type"] = "semantic"
 
 print(f"🔍 Created {len(nodes)} high-quality semantic nodes.")
+```
 
-# Step 5 — Building the AI Search Engine
+---
 
-Now that our PDF has been broken into small, meaningful pieces, we are ready to build the “search engine” part of our AI system. This is one of the most important steps.
+## Step 5 — Building the AI Search Engine
 
-**In this cell, we put together the tool that helps the AI:**
+Now that our PDF has been broken into small, meaningful pieces, we are ready to build the "search engine" part of our AI system. This is one of the most important steps.
+
+### In This Cell, We Put Together the Tool That Helps the AI:
 
 ✔ Understand your question
 
@@ -345,22 +334,22 @@ Now that our PDF has been broken into small, meaningful pieces, we are ready to 
 
 ✔ Give you the most accurate answer possible
 
-This technique is called **Query Fusion**, and it comes from **Meta’s Llama Cookbook**.
-It makes the AI much smarter and more reliable—especially when questions are complicated or phrased in different ways.
+This technique is called **Query Fusion**, and it comes from **Meta's Llama Cookbook**. It makes the AI much smarter and more reliable — especially when questions are complicated or phrased in different ways.
 
 Think of it like having several researchers all look for the answer separately, then compare findings and give you the clearest final response.
 
-**In simple terms:**
+**In simple terms:** Step 5 builds the brain of our search system — the part that helps the AI find the right information in the PDF, even if the question is difficult or worded differently.
 
-**Step 5** builds the brain of our search system — the part that helps the AI find the right information in the PDF, even if the question is difficult or worded differently.
+### 📋 Copy and paste this code into Cell 5:
 
+```python
 # Cell 5 – Build the smart search system (Query Fusion)
 #
 # Now that we have broken the PDF into small, meaningful pieces (chunks),
-# this cell builds the “search engine” that will help the AI find the
+# this cell builds the "search engine" that will help the AI find the
 # right information when you ask a question.
 #
-# This uses a method called **Query Fusion**, which comes from Meta’s Llama Cookbook.
+# This uses a method called **Query Fusion**, which comes from Meta's Llama Cookbook.
 # Query Fusion improves accuracy by:
 #   - Rewriting your question in different ways
 #   - Searching the document several times
@@ -389,10 +378,13 @@ query_rewriting_pack = QueryRewritingRetrieverPack(
 )
 
 print("🚀 Advanced Query Fusion RAG Engine Ready!")
+```
 
-# Step 6 — Asking Questions and Getting Answers
+---
 
-This is the **final** step — and the part you’ll interact with the most.
+## Step 6 — Asking Questions and Getting Answers
+
+This is the **final** step — and the part you'll interact with the most.
 
 Now that our AI system is fully set up, this cell creates a simple chat-like loop where you can:
 
@@ -404,26 +396,23 @@ Now that our AI system is fully set up, this cell creates a simple chat-like loo
 
 ✔ Keep asking as many questions as you want
 
-✔ Type “end” when you’re finished
+✔ Type "end" when you're finished
 
-**Behind the scenes, the AI is:**
+### Behind the Scenes, the AI Is:
 
-1.  Reading your question
-
-2.  Rewriting it in different ways
-
-3.  Searching the PDF for relevant pieces
-
-4.  Comparing the results
-
-5.  Giving you the best possible answer
+1. Reading your question
+2. Rewriting it in different ways
+3. Searching the PDF for relevant pieces
+4. Comparing the results
+5. Giving you the best possible answer
 
 This turns your PDF into a smart assistant that can explain, summarise, or find information instantly.
 
-In simple words:
+**In simple words:** Step 6 is where you finally get to talk to the AI. You ask questions, it gives answers, and the conversation continues until you decide to stop.
 
-**Step 6** is where you finally get to talk to the AI. You ask questions, it gives answers, and the **conversation** continues until you decide to stop.
+### 📋 Copy and paste this code into Cell 6:
 
+```python
 # Cell 6 – Ask questions and get answers from your PDF
 #
 # This final cell creates a simple question-and-answer loop.
@@ -452,7 +441,7 @@ def safe_rag_run(question, retries=3):
             print(f"⚠️ Error: {e}")
             print(f"🔁 Retrying ({attempt+1}/{retries})...")
 
-    # If all retries fail, return a message saying we couldn’t get an answer.
+    # If all retries fail, return a message saying we couldn't get an answer.
     return "❌ Could not generate a valid answer after retries."
 
 print("\nRAG Interactive Mode")
@@ -474,12 +463,58 @@ while True:
     # Run the question through our safe search function.
     response = safe_rag_run(user_question)
 
-    # Display the question and the AI’s answer.
+    # Display the question and the AI's answer.
     print("\n──────────────────────────────────────────────")
     print("❓ QUESTION:")
     print(user_question)
     print("\n🧠 ANSWER:")
     print(response)
     print("──────────────────────────────────────────────\n")
+```
 
+---
 
+## 🎉 Congratulations!
+
+You've now built a complete AI-powered PDF Question-and-Answer system using Meta's Llama models.
+
+### What You've Learned:
+
+- How to install and configure AI libraries
+- How to connect to OpenRouter and use Llama models
+- How to process and chunk PDF documents intelligently
+- How to build a query fusion RAG system
+- How to create an interactive Q&A interface
+
+### Next Steps:
+
+- Try different PDFs to see how the system performs
+- Experiment with different Llama models
+- Adjust the chunk sizes and retrieval parameters
+- Build upon this foundation to create more advanced AI applications
+
+---
+
+## Troubleshooting
+
+### Common Issues:
+
+**Installation errors:** Make sure you're running the notebook in Google Colab with a stable internet connection.
+
+**API key errors:** Double-check that your OpenRouter API key is valid and has credits available.
+
+**PDF download issues:** Ensure your Google Drive link is set to "Anyone with the link can view" and the file is a valid PDF.
+
+**Empty responses:** The AI might not find relevant information. Try rephrasing your question or check if the information exists in the PDF.
+
+---
+
+## Support
+
+If you encounter any issues or have questions:
+1. Review the comments in each code cell
+2. Check the error messages carefully
+3. Ensure all prerequisites are met
+4. Verify your API key and PDF link are correct
+
+Happy coding! 🚀
