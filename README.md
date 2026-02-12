@@ -279,5 +279,5 @@ This project demonstrates:
 - Advanced retrieval strategies (Query Fusion)  
 - Structured LLM system design  
 
-It reflects hands-on experience building retrieval-backed AI systems rather than simple chatbot wrappers.
+
 
