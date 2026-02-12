@@ -1,6 +1,5 @@
-META-Powered PDF Question & Answer Assistant
-
-Retrieval-Augmented Generation (RAG) system using Meta Llama models
+# META-Powered PDF Question & Answer Assistant  
+*Retrieval-Augmented Generation (RAG) system using Meta Llama models*
 
 This project is a hands-on implementation of a Retrieval-Augmented Generation (RAG) pipeline built in Google Colab using Meta Llama models.
 
@@ -8,58 +7,37 @@ The system allows a user to upload any PDF (policy, research paper, report, curr
 
 The goal of this project was to explore practical RAG architecture including semantic chunking, embedding-based retrieval, query rewriting, and hallucination control.
 
-Overview
+---
+
+## 🚀 Overview
 
 This assistant:
 
-Loads a PDF from Google Drive
-
-Breaks it into semantic chunks
-
-Generates embeddings for vector search
-
-Uses Query Fusion retrieval for improved recall
-
-Answers questions strictly based on retrieved context
+- Loads a PDF from Google Drive  
+- Breaks it into semantic chunks  
+- Generates embeddings for vector search  
+- Uses Query Fusion retrieval for improved recall  
+- Answers questions strictly based on retrieved context  
 
 The system is designed to reduce hallucinations by enforcing strict context grounding and low-temperature inference.
 
-0. Prerequisites
+---
+
+## 📦 Prerequisites
 
 Before running the notebook, you’ll need:
 
-Google Colab access
-The notebook is designed to run in Colab.
+1. **Google Colab access**  
+2. **OpenRouter API key**  
+3. **A Google Drive link to a PDF**
 
-OpenRouter API key
-Used to access Meta Llama models via OpenRouter.
+---
 
-A Google Drive link to a PDF
-Any PDF stored in Google Drive (accessible via link or your account).
+## 1️⃣ Install Required Libraries
 
-1. Install Required Libraries
+Run once per Colab session:
 
-This step installs all necessary dependencies.
-Run once per Colab session.
-
-Installed components include:
-
-llama-index – document indexing and querying framework
-
-llama-index-llms-openrouter – integration with Meta Llama models
-
-llama-index-embeddings-huggingface – embedding generation
-
-llama-index-readers-file – PDF reader
-
-llama-index-packs-fusion-retriever – advanced retrieval (Query Fusion)
-
-sentence-transformers – embedding support
-
-nest-asyncio – async compatibility in Colab
-
-requests – PDF download handling
-
+```python
 %pip install -q \
   llama-index \
   llama-index-llms-openrouter \
@@ -71,29 +49,36 @@ requests – PDF download handling
   requests
 
 print("✅ Installation complete")
+```
 
-2. Configure the AI Model
+Installed components:
+
+- `llama-index` – document indexing & querying  
+- `llama-index-llms-openrouter` – Meta Llama integration  
+- `llama-index-embeddings-huggingface` – embedding generation  
+- `llama-index-readers-file` – PDF ingestion  
+- `sentence-transformers` – semantic embeddings  
+- `nest-asyncio` – async compatibility  
+- `requests` – PDF download handling  
+
+---
+
+## 2️⃣ Configure the AI Model
 
 This step:
 
-Imports required libraries
-
-Loads your OpenRouter API key
-
-Configures the Meta Llama model
-
-Sets up the embedding model
-
-Registers both with LlamaIndex
+- Loads your OpenRouter API key  
+- Configures Meta Llama  
+- Sets up embeddings  
+- Registers everything with LlamaIndex  
 
 Key configuration choices:
 
-Low temperature (0.1) to reduce hallucinations
+- **Low temperature (0.1)** to reduce hallucinations  
+- Strict system prompt enforcing grounded answers  
+- Token limits for concise responses  
 
-Strict system prompt enforcing grounded responses
-
-Token limits to keep responses concise and factual
-
+```python
 import os
 from getpass import getpass
 import nest_asyncio
@@ -127,121 +112,172 @@ Settings.llm = llm
 Settings.embed_model = embed_model
 
 print("✅ AI model and settings are ready")
+```
 
-3. Download the PDF
+---
+
+## 3️⃣ Download the PDF
 
 The system:
 
-Accepts a Google Drive link
+1. Accepts a Google Drive link  
+2. Extracts the file ID  
+3. Downloads the PDF  
+4. Saves it as `data/source.pdf`  
 
-Extracts the file ID
+```python
+import os
+import re
+import requests
 
-Downloads the PDF locally
+def download_pdf_from_drive(drive_url: str, save_path: str):
+    match = re.search(r"/d/([A-Za-z0-9_-]+)", drive_url)
+    if match:
+        file_id = match.group(1)
+    else:
+        match = re.search(r"id=([A-Za-z0-9_-]+)", drive_url)
+        if match:
+            file_id = match.group(1)
+        else:
+            raise ValueError("❌ Could not extract file ID.")
 
-Stores it as data/source.pdf
+    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    resp = requests.get(download_url)
+    resp.raise_for_status()
 
-This keeps document ingestion simple and reproducible.
+    with open(save_path, "wb") as f:
+        f.write(resp.content)
 
-# (code unchanged)
+drive_link = input("Paste your Google Drive PDF link: ").strip()
 
-4. Semantic Chunking
+DATA_DIR = "data"
+os.makedirs(DATA_DIR, exist_ok=True)
 
-Instead of naive fixed-length splitting, this project uses embedding-based semantic segmentation.
+pdf_path = os.path.join(DATA_DIR, "source.pdf")
 
-Process:
+download_pdf_from_drive(drive_link, pdf_path)
+print("✅ PDF downloaded")
+```
 
-Load PDF
+---
 
-Generate embeddings
+## 4️⃣ Semantic Chunking
 
-Identify semantic breakpoints
+Instead of naive fixed-size splits, this system uses embedding-based semantic segmentation.
 
-Create metadata-tagged nodes
+```python
+from llama_index.core import SimpleDirectoryReader
+from llama_index.core.node_parser import SemanticSplitterNodeParser
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-This improves retrieval precision and contextual relevance.
+documents = SimpleDirectoryReader(input_files=[pdf_path]).load_data()
 
-# (code unchanged)
+semantic_embed = HuggingFaceEmbedding(
+    model_name="BAAI/bge-small-en-v1.5"
+)
 
-5. Query Fusion Retrieval
+parser = SemanticSplitterNodeParser(
+    buffer_size=3,
+    breakpoint_percentile_threshold=95,
+    embed_model=semantic_embed,
+)
 
-The system uses the Query Rewriting Retriever Pack, which:
+nodes = parser.get_nodes_from_documents(documents)
 
-Rewrites the user query multiple times
+for n in nodes:
+    n.metadata["source"] = pdf_path
+    n.metadata["chunk_type"] = "semantic"
 
-Performs multiple vector searches
+print(f"Created {len(nodes)} semantic nodes")
+```
 
-Fuses the best results
+---
 
-This increases recall and reduces the risk of missing relevant context.
+## 5️⃣ Query Fusion Retrieval
 
-# (code unchanged)
+Uses Query Rewriting Retriever Pack to:
 
-6. Interactive Q&A Loop
+- Rewrite queries multiple times  
+- Perform multiple searches  
+- Fuse the best results  
 
-The final stage provides an interactive loop:
+```python
+from llama_index.core.llama_pack import download_llama_pack
 
-User enters a question
+QueryRewritingRetrieverPack = download_llama_pack(
+    "QueryRewritingRetrieverPack",
+    "./query_rewriting_pack",
+)
 
-The system retrieves relevant chunks
+query_rewriting_pack = QueryRewritingRetrieverPack(
+    nodes,
+    chunk_size=256,
+    vector_similarity_top_k=8,
+    fusion_similarity_top_k=8,
+    num_queries=6,
+)
 
-The LLM generates a grounded response
+print("🚀 Query Fusion RAG Engine Ready")
+```
 
-Retry logic handles transient failures
+---
 
-# (code unchanged)
+## 6️⃣ Interactive Q&A
 
-Example Questions
+```python
+def safe_rag_run(question, retries=3):
+    for attempt in range(retries):
+        try:
+            resp = query_rewriting_pack.run(question)
+            if resp is None or str(resp).strip() == "":
+                raise ValueError("Empty response.")
+            return resp
+        except Exception as e:
+            print(f"Retrying... ({attempt+1}/{retries})")
 
-“What are the main objectives in this document?”
+    return "❌ Failed to generate response."
 
-“Summarise the compliance requirements mentioned.”
+while True:
+    user_question = input("Enter your question: ").strip()
 
-“What responsibilities are outlined?”
+    if user_question.lower() == "end":
+        break
 
-“How is assessment described?”
+    response = safe_rag_run(user_question)
+    print("\nAnswer:\n", response)
+```
 
-Design Considerations
+---
 
-This implementation focuses on:
+## 🧠 Design Focus
 
-Grounded responses only
+- Grounded responses only  
+- Reduced hallucination risk  
+- Semantic retrieval  
+- Query rewriting for improved recall  
+- Structured RAG pipeline  
 
-Reduced hallucination risk
+---
 
-Semantic retrieval instead of naive search
+## 🔮 Future Improvements
 
-Structured retrieval pipeline
+- FastAPI backend wrapper  
+- Persistent vector database (FAISS / Pinecone)  
+- Source citation formatting  
+- Logging & observability  
+- Confidence scoring  
 
-Reproducible workflow
+---
 
-Possible Extensions
+## 🎯 Purpose
 
-Future improvements could include:
+This project demonstrates:
 
-FastAPI backend wrapper
+- Practical RAG architecture  
+- Embedding-based document retrieval  
+- Prompt engineering for hallucination control  
+- Advanced retrieval strategies (Query Fusion)  
+- Structured LLM system design  
 
-Persistent vector database (FAISS / Pinecone)
+It reflects hands-on experience building retrieval-backed AI systems rather than simple chatbot wrappers.
 
-Source citation formatting
-
-Query logging & observability
-
-Confidence scoring
-
-Role-based access control
-
-Purpose of This Project
-
-This project was built to explore and demonstrate:
-
-Practical RAG architecture
-
-Embedding-based document retrieval
-
-Prompt control for hallucination mitigation
-
-Advanced retrieval techniques (Query Fusion)
-
-Integration of open LLM infrastructure into structured pipelines
-
-It reflects a hands-on approach to building retrieval-backed AI systems rather than simple chatbot wrappers.
